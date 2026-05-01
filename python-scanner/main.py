@@ -28,7 +28,6 @@ def process_omr_actual(image_bytes, category):
     gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
     
     # ২. থ্রেশহোল্ড (কালো বাবলগুলোকে সাদা করবে)
-    # আপনার ছবির কন্ট্রাস্ট অনুযায়ী ১৫০ মানটি একদম পারফেক্ট
     _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
 
     # ৩. কন্টুর খুঁজে বের করা
@@ -41,10 +40,8 @@ def process_omr_actual(image_bytes, category):
         area = cv2.contourArea(c)
         ar = w / float(h)
         
-        # 🛡️ ভুয়া বর্ডার বা নয়েজ ফিল্টার করার জন্য শর্ত
-        # গোল্লাগুলো সাধারণত ২০০০-১৫০০০ এরিয়ার হয় এবং উইডথ ১০০-এর নিচে থাকে
+        # 🛡️ ভুয়া বর্ডার বা নয়েজ ফিল্টার
         if area > 1000 and 0.6 <= ar <= 1.5 and w < 120 and h < 120:
-            # চেক করা: গোল্লাটা কি আসলেই ভরাট?
             mask = np.zeros(thresh.shape, dtype="uint8")
             cv2.drawContours(mask, [c], -1, 255, -1)
             mask = cv2.bitwise_and(thresh, thresh, mask=mask)
@@ -52,12 +49,11 @@ def process_omr_actual(image_bytes, category):
             
             fill_ratio = total / float(area)
             
-            # যদি ৩০% এর বেশি কালি থাকে, তবেই বাবল ধরবে
+            # যদি ৩৫% এর বেশি কালি থাকে
             if fill_ratio > 0.35:
                 raw_bubbles.append((x, y, w, h, c))
 
-    # ৪. পজিশন ফিল্টার: বামের নম্বর এবং ডানের বর্ডার বাদ দেওয়া
-    # আমরা শুধু মাঝখানের ০.২৫ থেকে ০.৯২ অংশটুকু নিব
+    # ৪. পজিশন ফিল্টার: মাঝখানের অংশটুকু নিব
     pure_bubbles = []
     for (x, y, w, h, c) in raw_bubbles:
         cx = x + w // 2
@@ -65,31 +61,30 @@ def process_omr_actual(image_bytes, category):
         if 0.25 < cx_ratio < 0.95:
             pure_bubbles.append((x, y, w, h, c))
 
-    # ৫. ওপর থেকে নিচে সিরিয়াল করা
+    # ৫. ওপর থেকে নিচে সিরিয়াল করা (Y-axis অনুযায়ী)
     filled_bubbles = sorted(pure_bubbles, key=lambda b: b[1])
 
     detected_answers = {}
-    prefix = category if category else "ict"
-    # ক্যাটাগরি অনুযায়ী আইডি সেট করা
-    category_map = {"science": "sci", "bangla": "ban", "ict": "ict"}
+    category_map = {"science": "sci", "bangla": "ban", "ict": "ict", "gk": "gk"} # GK অ্যাড করা হলো
     prefix = category_map.get(category, "ict")
 
-    # শুরুতে সব NOT_ANSWERED সেট করা
-    for i in range(1, 6):
+    # শুরুতে সব NOT_ANSWERED সেট করা (১০ টি প্রশ্নের জন্য)
+    for i in range(1, 11):
         detected_answers[f"{prefix}_{i}"] = "NOT_ANSWERED"
 
     print("\n" + "="*50)
     print(f"🎯 SCANNER LOG: Found {len(filled_bubbles)} Potential Bubbles")
 
     for idx, (x, y, w, h, c) in enumerate(filled_bubbles):
-        if idx >= 5: break # শুধু প্রথম ৫টা প্রশ্ন নিবে
+        # 🚀 এখন ১০টা প্রশ্ন নিবে
+        if idx >= 10: break 
         
         cx = x + w // 2
         question_num = idx + 1
         q_id = f"{prefix}_{question_num}"
         cx_ratio = cx / target_width
         
-        # 📐 আপনার দেওয়া রেশিও অনুযায়ী উত্তর বের করা
+        # 📐 রেশিও অনুযায়ী উত্তর বের করা
         if cx_ratio < 0.42:   ans = "A"
         elif cx_ratio < 0.60: ans = "B"
         elif cx_ratio < 0.78: ans = "C"
@@ -100,7 +95,7 @@ def process_omr_actual(image_bytes, category):
 
         # ছবিতে চিহ্নিত করা
         cv2.drawContours(output_image, [c], -1, (0, 255, 0), 3)
-        cv2.putText(output_image, f"Q{idx+1}:{ans}", (x, y - 10), 
+        cv2.putText(output_image, f"Q{question_num}:{ans}", (x, y - 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     print("="*50 + "\n")
