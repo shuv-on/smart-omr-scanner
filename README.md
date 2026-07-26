@@ -1,3 +1,5 @@
+## Demo Link
+[Watch Demo Video](https://youtu.be/6P73GazZVs4)
 # Smart OMR Project
 
 An intelligent, automated **Optical Mark Recognition (OMR)** examination system that uses Computer Vision and AI-driven Item Response Theory (IRT) to scan, evaluate, and grade multiple-choice answer sheets — instantly.
