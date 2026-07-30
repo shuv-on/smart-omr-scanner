@@ -1,0 +1,50 @@
+# ----- Build artifacts -----
+*.aux
+*.log
+*.fdb_latexmk
+*.fls
+*.out
+*.toc
+*.synctex.gz
+
+# ----- Poster source folder (intermediate) -----
+# (The final smart-omr-poster.pptx is committed at the repo root.
+#  Everything inside poster/ is rebuilt locally from project source.)
+poster/
+
+# ----- Python -----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# ----- Node / Next.js -----
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ----- Java / Spring Boot -----
+target/
+*.class
+*.jar
+*.war
+*.ear
+.gradle/
+build/
+
+# ----- IDE / editor -----
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ----- Misc -----
+.puku-cli/
+*.bak
